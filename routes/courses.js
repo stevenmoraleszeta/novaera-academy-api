@@ -8,5 +8,7 @@ router.put('/:courseId', controller.updateCourse);
 router.delete('/:courseId', controller.deleteCourse);
 router.get('/search', controller.searchCoursesByTitle);
 router.get('/category-name/:name', controller.getCoursesByCategoryName);
+router.get('/:courseId', controller.getCourseById);
+
 
 module.exports = router;

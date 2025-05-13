@@ -76,6 +76,22 @@ const searchCoursesByTitle = async (req, res) => {
     }
   };
 
+const getCourseById = async (req, res) => {
+  const { courseId } = req.params;
+
+  try {
+    const result = await pool.query('SELECT * FROM sp_get_course_by_id($1)', [courseId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Curso no encontrado.' });
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
   const getCoursesByCategoryName = async (req, res) => {
     const { name } = req.params;
     try {
@@ -94,4 +110,5 @@ module.exports = {
   deleteCourse,
   searchCoursesByTitle,
   getCoursesByCategoryName,
+  getCourseById,
 };

@@ -232,11 +232,42 @@ const deleteClass = async (req, res) => {
     });
   }
 };
+const getClassById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Obtener clase
+    const classResult = await pool.query('SELECT * FROM classes WHERE classId = $1', [id]);
+
+    if (classResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Clase no encontrada' });
+    }
+
+    const classData = classResult.rows[0];
+
+    // Obtener recursos de la clase
+    const resourcesResult = await pool.query(
+      'SELECT * FROM class_resources WHERE classId = $1 ORDER BY orderResource ASC',
+      [id]
+    );
+
+    classData.resources = resourcesResult.rows;
+
+    res.json(classData);
+  } catch (error) {
+    console.error('Error al obtener clase por ID:', error);
+    res.status(500).json({
+      error: 'Error interno al obtener la clase',
+      details: error.message
+    });
+  }
+};
 
 module.exports = {
   classValidations,
   getClasses,
   createClass,
   updateClass,
+  getClassById,
   deleteClass
 };

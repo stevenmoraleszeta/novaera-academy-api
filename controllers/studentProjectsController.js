@@ -1,10 +1,12 @@
 const pool = require('../db');
+const { sendProjectNotification } = require('../utils/mailer');
 
 // INSERT
 const insertStudentProject = async (req, res) => {
   const {
     title, dueDate, submissionDate, fileUrl, studentFileUrl,
-    comments, score, courseId, projectId, userId, mentorId, statusId
+    comments, score, courseId, projectId, userId, mentorId, statusId,
+    studentEmail, mentorEmail
   } = req.body;
 
   try {
@@ -15,7 +17,22 @@ const insertStudentProject = async (req, res) => {
         comments, score, courseId, projectId, userId, mentorId, statusId
       ]
     );
-    res.status(201).json({ message: 'Entrega de proyecto registrada exitosamente.' });
+
+    // Enviar correo al estudiante
+    await sendProjectNotification(
+      studentEmail,
+      'Nuevo Proyecto Enviado',
+      `Se ha enviado tu proyecto "${title}" exitosamente. Fecha de entrega: ${dueDate}`
+    );
+
+    // Enviar correo al mentor
+    await sendProjectNotification(
+      mentorEmail,
+      'Nuevo Proyecto Asignado',
+      `Se ha recibido  un nuevo proyecto "${title}" que requiere tu revisión. Fecha de entrega: ${dueDate}`
+    );
+
+    res.status(201).json({ message: 'Entrega de proyecto registrada exitosamente y notificaciones enviadas.' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -78,15 +95,15 @@ const deleteStudentProject = async (req, res) => {
   }
 };
 const getStudentProjectsByStatusName = async (req, res) => {
-    const { name } = req.params;
-    try {
-      const result = await pool.query('SELECT * FROM sp_get_student_projects_by_status_name($1)', [name]);
-      res.status(200).json(result.rows);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  };
-  
+  const { name } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM sp_get_student_projects_by_status_name($1)', [name]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   insertStudentProject,
   getStudentProjects,
