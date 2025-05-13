@@ -64,9 +64,36 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// GET USER PROFILE
+const getLoggedInUserProfile = async (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ error: 'No se proporcionó un token de autenticación' });
+    }
+
+    // Verificar y decodificar el token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Obtener el userId del token decodificado
+    const userId = decoded.userId;
+    const result = await pool.query('SELECT * FROM sp_select_user_by_id($1)', [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   insertUser,
   getUsers,
   updateUser,
   deleteUser,
+  getLoggedInUserProfile
 };
