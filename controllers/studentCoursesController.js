@@ -26,6 +26,32 @@ const getStudentCourses = async (req, res) => {
   }
 };
 
+const getStudentCoursesById = async (req, res) => {
+  const {id} = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM student_courses WHERE userId = $1',[id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'El estudiante no se encuentra inscrito en este curso.' });
+    } 
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// SELECT BY COURSE
+const getStudentCoursesByCourse = async (req, res) => {
+  const { courseId } = req.params;
+
+  try {
+    const result = await pool.query('SELECT * FROM sp_select_student_courses_by_course($1)', [
+      courseId,
+    ]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // UPDATE
 const updateStudentCourse = async (req, res) => {
   const { id } = req.params;
@@ -61,4 +87,6 @@ module.exports = {
   getStudentCourses,
   updateStudentCourse,
   deleteStudentCourse,
+  getStudentCoursesById,
+  getStudentCoursesByCourse
 };

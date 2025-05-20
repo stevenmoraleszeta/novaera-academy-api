@@ -60,6 +60,29 @@ const getClassResources = async (req, res) => {
   }
 };
 
+// Obtener recursos por courseId, moduleId y classId
+const getClassResourcesByModuleAndClass = async (req, res) => {
+  const { courseId, moduleId, classId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT cr.* 
+       FROM class_resources cr
+       INNER JOIN classes c ON cr.classId = c.classId
+       INNER JOIN modules m ON c.moduleId = m.moduleId
+       INNER JOIN courses co ON m.courseId = co.courseId
+       WHERE co.courseId = $1 AND m.moduleId = $2 AND c.classId = $3`,
+      [courseId, moduleId, classId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener recursos por curso, módulo y clase:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+};
+
 // Crear nuevo recurso
 const createClassResource = async (req, res) => {
   try {
@@ -281,5 +304,6 @@ module.exports = {
   getClassResources,
   createClassResource,
   updateClassResource,
-  deleteClassResource
+  deleteClassResource,
+  getClassResourcesByModuleAndClass
 };
