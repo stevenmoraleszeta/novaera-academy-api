@@ -27,9 +27,9 @@ const getStudentCourses = async (req, res) => {
 };
 
 const getStudentCoursesById = async (req, res) => {
-  const {id} = req.params;
+  const {courseId, id} = req.params;
   try {
-    const result = await pool.query('SELECT * FROM student_courses WHERE userId = $1',[id]);
+    const result = await pool.query('SELECT * FROM student_courses WHERE userId = $1 AND courseId = $2',[id, courseId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'El estudiante no se encuentra inscrito en este curso.' });
     } 
