@@ -60,6 +60,9 @@ app.use('/api/class-resources', classResourcesRoutes);
 const loginRoutes = require('./routes/auth');
 app.use('/api/auth', loginRoutes);
 
+const paymentsRoutes = require('./routes/paymentsRoutes');
+app.use('/api/payments', paymentsRoutes);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
