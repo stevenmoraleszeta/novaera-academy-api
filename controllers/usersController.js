@@ -39,13 +39,13 @@ const updateUser = async (req, res) => {
   const userId = parseInt(req.params.userId);
   const {
     firstname, lastname1, lastname2, age, email, phone, country,
-    photoUrl, roleId, updatedAt
+    photourl, roleId, updatedAt
   } = req.body;
 
   try {
     await pool.query('SELECT sp_update_user($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', [
       userId, firstname, lastname1, lastname2, age, email, phone, country,
-      photoUrl, roleId, updatedAt
+      photourl, roleId, updatedAt
     ]);
     res.status(200).json({ message: 'Usuario actualizado exitosamente.' });
   } catch (error) {
