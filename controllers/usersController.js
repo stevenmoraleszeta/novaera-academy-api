@@ -1,6 +1,6 @@
 const pool = require('../db');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 
 // INSERT
 const insertUser = async (req, res) => {
@@ -38,13 +38,13 @@ const getUsers = async (req, res) => {
 const updateUser = async (req, res) => {
   const userId = parseInt(req.params.userId);
   const {
-    firstName, lastName1, lastName2, age, email, phone, country,
+    firstname, lastname1, lastname2, age, email, phone, country,
     photoUrl, roleId, updatedAt
   } = req.body;
 
   try {
     await pool.query('SELECT sp_update_user($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', [
-      userId, firstName, lastName1, lastName2, age, email, phone, country,
+      userId, firstname, lastname1, lastname2, age, email, phone, country,
       photoUrl, roleId, updatedAt
     ]);
     res.status(200).json({ message: 'Usuario actualizado exitosamente.' });
