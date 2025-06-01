@@ -2,10 +2,13 @@ const pool = require('../db');
 
 // INSERT
 const insertFeature = async (req, res) => {
-  const { title, description, iconUrl } = req.body;
+  const { title, description, iconurl } = req.body; 
   try {
-    await pool.query('SELECT sp_insert_features($1, $2, $3)', [title, description, iconUrl]);
-    res.status(201).json({ message: 'Funcionalidad creada exitosamente.' });
+    await pool.query(
+      'SELECT sp_insert_features($1, $2, $3)',
+      [title, description, iconurl]
+    );
+    res.status(201).json({ message: 'Funcionalidad creada.' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
