@@ -2,7 +2,7 @@ const pool = require('../db');
 
 // INSERT
 const insertFeature = async (req, res) => {
-  const { title, description, iconurl } = req.body; 
+  const { title, description, iconurl } = req.body;
   try {
     await pool.query(
       'SELECT sp_insert_features($1, $2, $3)',

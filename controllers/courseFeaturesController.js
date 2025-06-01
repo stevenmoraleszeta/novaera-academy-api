@@ -29,7 +29,7 @@ const getCourseFeaturesByCourseId = async (req, res) => {
        FROM course_features cf
        JOIN features f ON cf.featureid = f.featureid
        WHERE cf.courseid = $1
-       ORDER BY cf."order"`,
+       ORDER BY cf.order`,
       [courseId]
     );
     res.status(200).json(result.rows);
