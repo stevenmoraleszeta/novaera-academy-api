@@ -11,7 +11,7 @@ const insertProject = async (req, res) => {
   try {
     // Primero obtenemos el correo del estudiante
     const studentResult = await pool.query(
-      'SELECT email FROM users WHERE user_id = $1',
+      'SELECT email FROM users WHERE userid = $1',
       [userId]
     );
 
