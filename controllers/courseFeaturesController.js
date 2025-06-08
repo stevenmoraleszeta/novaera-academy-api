@@ -74,6 +74,7 @@ const deleteCourseFeature = async (req, res) => {
     await pool.query('SELECT sp_delete_course_features($1)', [id]);
     res.status(200).json({ message: 'Relación curso-funcionalidad eliminada.' });
   } catch (error) {
+    console.error("Error en deleteCourseFeature:", error);
     res.status(400).json({ error: error.message });
   }
 };
