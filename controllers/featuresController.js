@@ -28,11 +28,11 @@ const getFeatures = async (req, res) => {
 // UPDATE
 const updateFeature = async (req, res) => {
   const { featureId } = req.params;
-  const { title, description, iconUrl } = req.body;
+  const { title, description, iconurl } = req.body;
   try {
     await pool.query(
       'SELECT sp_update_features($1, $2, $3, $4)',
-      [featureId, title, description, iconUrl]
+      [featureId, title, description, iconurl]
     );
     res.status(200).json({ message: 'Funcionalidad actualizada exitosamente.' });
   } catch (error) {
