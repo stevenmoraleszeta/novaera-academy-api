@@ -219,6 +219,8 @@ const deleteClass = async (req, res) => {
       });
     }
 
+    // Eliminar referencias en completed_classes antes de eliminar la clase
+    await pool.query('DELETE FROM completed_classes WHERE classid = $1', [id]);
     await pool.query('SELECT sp_delete_class($1)', [id]);
 
     res.json({
