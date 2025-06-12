@@ -6,7 +6,8 @@ const {
     createClass,
     updateClass,
     deleteClass,
-    getClassById
+    getClassById,
+    getClassesByCourseModule
 } = require('../controllers/classesController');
 
 router.get('/', getClasses);
@@ -14,5 +15,6 @@ router.post('/', classValidations, createClass);
 router.put('/:id', classValidations, updateClass);
 router.delete('/:id', deleteClass);
 router.get('/:id', getClassById);
+router.get('/by-course-module/:courseId/:moduleId', getClassesByCourseModule);
 
 module.exports = router;

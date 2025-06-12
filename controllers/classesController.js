@@ -265,11 +265,26 @@ const getClassById = async (req, res) => {
   }
 };
 
+const getClassesByCourseModule = async (req, res) => {
+  const { courseId, moduleId } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM classes WHERE courseId = $1 AND moduleId = $2 ORDER BY orderClass',
+      [courseId, moduleId]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener las clases del módulo:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   classValidations,
   getClasses,
   createClass,
   updateClass,
   getClassById,
-  deleteClass
+  deleteClass,
+  getClassesByCourseModule
 };
