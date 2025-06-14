@@ -80,14 +80,16 @@ const createClass = async (req, res) => {
       });
     }
 
-    await pool.query(
-      'SELECT sp_insert_class($1, $2, $3, $4, $5)',
+    const insertResult = await pool.query(
+      'INSERT INTO classes (courseid, moduleid, title, orderclass, restricted) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [courseId, moduleId, title, orderClass, restricted]
     );
 
+    const createdClass = insertResult.rows[0];
+
     res.status(201).json({
       message: 'Clase creada exitosamente',
-      class: { courseId, moduleId, title, orderClass, restricted }
+      class: createdClass
     });
   } catch (error) {
     console.error('Error al crear clase:', error);
