@@ -153,18 +153,6 @@ const updateClass = async (req, res) => {
       });
     }
 
-    // Verificar si ya existe una clase con el mismo orden en el mismo módulo (excluyendo la clase actual)
-    const orderExists = await pool.query(
-      'SELECT 1 FROM classes WHERE moduleId = $1 AND orderClass = $2 AND classId != $3',
-      [moduleId, orderClass, id]
-    );
-
-    if (orderExists.rows.length > 0) {
-      return res.status(400).json({
-        error: 'Ya existe otra clase con ese orden en este módulo'
-      });
-    }
-
     await pool.query(
       'SELECT sp_update_class($1, $2, $3, $4, $5, $6)',
       [id, courseId, moduleId, title, orderClass, restricted]
