@@ -43,14 +43,16 @@ const getStudentCoursesById = async (req, res) => {
 // SELECT BY COURSE
 const getStudentCoursesByCourse = async (req, res) => {
   const { courseId } = req.params;
-
+  const numericCourseId = Number(courseId);
+  console.log("Buscando cursos para courseId:", numericCourseId);
   try {
     const result = await pool.query('SELECT * FROM sp_select_student_courses_by_course($1)', [
-      courseId,
+      numericCourseId,
     ]);
     res.status(200).json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error en getStudentCoursesByCourse:", error);
+    res.status(500).json({ error: error.message, detail: error.detail });
   }
 };
 
