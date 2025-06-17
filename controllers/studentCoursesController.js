@@ -2,6 +2,7 @@ const pool = require('../db');
 
 // INSERT
 const insertStudentCourse = async (req, res) => {
+  console.log("Body recibido:", req.body);
   const { userId, courseId, enrollmentDate } = req.body;
 
   try {
@@ -12,7 +13,8 @@ const insertStudentCourse = async (req, res) => {
     ]);
     res.status(201).json({ message: 'Curso del estudiante registrado correctamente.' });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Error en insertStudentCourse:", error); // <-- agrega esto
+    res.status(400).json({ error: error.message, detail: error.detail });
   }
 };
 
@@ -27,12 +29,12 @@ const getStudentCourses = async (req, res) => {
 };
 
 const getStudentCoursesById = async (req, res) => {
-  const {courseId, id} = req.params;
+  const { courseId, id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM student_courses WHERE userId = $1 AND courseId = $2',[id, courseId]);
+    const result = await pool.query('SELECT * FROM student_courses WHERE userId = $1 AND courseId = $2', [id, courseId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'El estudiante no se encuentra inscrito en este curso.' });
-    } 
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
