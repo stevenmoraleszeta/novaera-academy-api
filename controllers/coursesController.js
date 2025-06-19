@@ -67,14 +67,14 @@ const deleteCourse = async (req, res) => {
 };
 
 const searchCoursesByTitle = async (req, res) => {
-    const { title } = req.query;
-    try {
-      const result = await pool.query('SELECT * FROM sp_search_courses_by_title($1)', [title]);
-      res.status(200).json(result.rows);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  };
+  const { title } = req.query;
+  try {
+    const result = await pool.query('SELECT * FROM sp_search_courses_by_title($1)', [title]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 const getCourseById = async (req, res) => {
   const { courseId } = req.params;
@@ -92,20 +92,44 @@ const getCourseById = async (req, res) => {
   }
 };
 
-  const getCoursesByCategoryName = async (req, res) => {
-    const { name } = req.params;
-    try {
-      const result = await pool.query('SELECT * FROM sp_get_courses_by_category_name($1)', [name]);
-      res.status(200).json(result.rows);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  };
-  
-  
+const getCoursesByCategoryName = async (req, res) => {
+  const { name } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM sp_get_courses_by_category_name($1)', [name]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const updateCourseMentor = async (req, res) => {
+  const { courseId } = req.params;
+  let { mentorId } = req.body;
+  console.log("PUT /courses/:courseId/mentor body:", req.body);
+
+  if (!mentorId) {
+    return res.status(400).json({ error: "mentorId es requerido" });
+  }
+
+  mentorId = Number(mentorId);
+  if (isNaN(mentorId)) {
+    return res.status(400).json({ error: "mentorId debe ser numérico" });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE courses SET mentorid = $1, updatedat = NOW() WHERE courseid = $2',
+      [mentorId, courseId]
+    );
+    res.status(200).json({ message: 'Mentor actualizado en el curso.' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 module.exports = {
   insertCourse,
   getCourses,
+  updateCourseMentor,
   updateCourse,
   deleteCourse,
   searchCoursesByTitle,

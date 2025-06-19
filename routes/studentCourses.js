@@ -4,8 +4,8 @@ const controller = require('../controllers/studentCoursesController');
 
 router.post('/', controller.insertStudentCourse);
 router.get('/', controller.getStudentCourses);
-router.get('/:courseId/:id', controller.getStudentCoursesById);
-router.get('/by-course/:courseId', controller.getStudentCoursesByCourse);
+router.get('/by-course/:courseId', controller.getStudentCoursesByCourse); // <-- esta primero
+router.get('/:courseId/:id', controller.getStudentCoursesById);           // <-- esta después
 router.put('/:id', controller.updateStudentCourse);
 router.delete('/:id', controller.deleteStudentCourse);
 
