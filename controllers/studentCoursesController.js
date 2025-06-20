@@ -44,7 +44,6 @@ const getStudentCoursesById = async (req, res) => {
 const getStudentCoursesByCourse = async (req, res) => {
   const { courseId } = req.params;
   const numericCourseId = Number(courseId);
-  console.log("Buscando cursos para courseId:", numericCourseId);
   try {
     const result = await pool.query('SELECT * FROM sp_select_student_courses_by_course($1)', [
       numericCourseId,
