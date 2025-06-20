@@ -77,11 +77,12 @@ const updateStudentCourse = async (req, res) => {
 // DELETE
 const deleteStudentCourse = async (req, res) => {
   const { id } = req.params;
-
+  console.log("Intentando eliminar studentcourseid:", id);
   try {
-    await pool.query('SELECT sp_delete_student_courses($1)', [id]);
+    await pool.query('SELECT sp_delete_student_courses($1)', [Number(id)]);
     res.status(200).json({ message: 'Curso del estudiante eliminado exitosamente.' });
   } catch (error) {
+    console.error("Error en deleteStudentCourse:", error);
     res.status(400).json({ error: error.message });
   }
 };
