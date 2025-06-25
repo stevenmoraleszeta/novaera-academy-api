@@ -24,6 +24,10 @@ app.use('/api/courses', coursesRoutes);
 const usersRoutes = require('./routes/users');
 app.use('/api/users', usersRoutes);
 
+// students route 
+const studentsRoutes = require('./routes/students');
+app.use('/api/students', studentsRoutes); 
+
 const studentProfilesRoutes = require('./routes/studentProfiles');
 app.use('/api/student-profiles', studentProfilesRoutes);
 
