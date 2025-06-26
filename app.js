@@ -1,4 +1,9 @@
 const express = require('express');
+
+/* const passport = require('passport');
+require('./passport');
+app.use(passport.initialize()); */
+
 require('dotenv').config();
 const cors = require('cors');
 
@@ -67,6 +72,9 @@ const completedClassesRoutes = require('./routes/completedClasses');
 app.use('/api/users', completedClassesRoutes);
 
 app.use('/api/recordings', require('./routes/recordings'));
+
+/* const googleAuthRouter = require('./routes/googleAuth');
+app.use('/auth', googleAuthRouter); */
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
