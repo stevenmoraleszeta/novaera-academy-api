@@ -65,7 +65,7 @@ const deleteUser = async (req, res) => {
   const userId = parseInt(req.params.userId);
 
   try {
-    await pool.query('SELECT sp_delete_user($1)', [userId]);
+    await pool.query('SELECT sp_delete_user_new($1)', [userId]);
     res.status(200).json({ message: 'Usuario eliminado exitosamente.' });
   } catch (error) {
     res.status(400).json({ error: error.message });
