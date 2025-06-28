@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // INSERT
+// Necesito hacer otro modal
 const insertUser = async (req, res) => {
   const {
     firstName, lastName1, lastName2, age, email, phone, country,
@@ -39,15 +40,21 @@ const updateUser = async (req, res) => {
   const userId = parseInt(req.params.userId);
   const {
     firstname, lastname1, lastname2, age, email, phone, country,
-    photourl, roleId, updatedAt
+    photourl, roleid, updatedAt
   } = req.body;
 
   try {
+    const roleIdAsInt = parseInt(roleid, 10);
     await pool.query('SELECT sp_update_user($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', [
       userId, firstname, lastname1, lastname2, age, email, phone, country,
-      photourl, roleId, updatedAt
+      photourl, roleIdAsInt, updatedAt
     ]);
-    res.status(200).json({ message: 'Usuario actualizado exitosamente.' });
+    const { rows } = await pool.query('SELECT * FROM sp_select_user_by_id_new($1)', [userId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado después de la actualización.' });
+    }
+    res.status(200).json(rows[0]);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -58,7 +65,7 @@ const deleteUser = async (req, res) => {
   const userId = parseInt(req.params.userId);
 
   try {
-    await pool.query('SELECT sp_delete_user($1)', [userId]);
+    await pool.query('SELECT sp_delete_user_new($1)', [userId]);
     res.status(200).json({ message: 'Usuario eliminado exitosamente.' });
   } catch (error) {
     res.status(400).json({ error: error.message });

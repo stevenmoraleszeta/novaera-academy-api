@@ -54,30 +54,35 @@ const searchStudentProjectsByStudentName = async (req, res) => {
 // SELECT
 const getStudentProjects = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM sp_select_student_projects()');
+    const result = await pool.query('SELECT * FROM sp_select_projects_details_new()');
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// UPDATE
+// UPDATE FALTA ESTO URGE!!!!!
 const updateStudentProject = async (req, res) => {
   const { studentProjectId } = req.params;
   const {
-    title, dueDate, submissionDate, fileUrl, studentFileUrl,
-    comments, score, courseId, projectId, userId, mentorId, statusId
+    project_title, project_duedate, submissiondate, fileurl, studentfileurl,
+    comments, score, courseid, projectid, student_userid, mentor_userid, statusid
   } = req.body;
 
   try {
     await pool.query(
       'SELECT sp_update_student_project($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
       [
-        studentProjectId, title, dueDate, submissionDate, fileUrl, studentFileUrl,
-        comments, score, courseId, projectId, userId, mentorId, statusId
+        studentProjectId, project_title, project_duedate, submissiondate, fileurl, studentfileurl,
+        comments, score, courseid, projectid, student_userid, mentor_userid, statusid
       ]
     );
-    res.status(200).json({ message: 'Entrega de proyecto actualizada exitosamente.' });
+    const { rows } = await pool.query('SELECT * FROM sp_select_student_project_by_id($1)', [studentProjectId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Proyecto no encontrado después de la actualización.' });
+    }
+    res.status(200).json(rows[0]);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
