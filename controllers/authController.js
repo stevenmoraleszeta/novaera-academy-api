@@ -168,9 +168,50 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(403).json({ error: "Acceso denegado. Se requiere un token." });
+        }
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId; // Obtenemos el ID del usuario desde el token
+
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Faltan campos requeridos.' });
+        }
+
+        const userResult = await pool.query('SELECT * FROM sp_select_user_by_id($1)', [userId]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+        const user = userResult.rows[0];
+
+        const validPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('SELECT sp_update_password($1, $2)', [userId, hashedNewPassword]);
+
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente.' });
+
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).json({ error: 'Token inválido o expirado.' });
+        }
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     login,
     logout,
     requestPasswordReset,
-    resetPassword
+    resetPassword,
+    changePassword
 }; 
