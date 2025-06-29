@@ -19,8 +19,28 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
     );
-    // Redirige al frontend con el token
-    res.redirect(`http://localhost:3000/login?token=${token}`);
+
+    // Envía HTML que cierra el popup y envía el token al padre
+    res.send(`
+        <script>
+            // Envía el token a la ventana padre
+            window.opener.postMessage({
+                type: 'GOOGLE_AUTH_SUCCESS',
+                token: '${token}',
+                user: ${JSON.stringify({
+        userId: user.userid,
+        email: user.email,
+        firstname: user.firstname,
+        lastname1: user.lastname1,
+        roleId: user.roleid,
+        photourl: user.photourl
+    })}
+            }, '*');
+            
+            // Cierra el popup
+            window.close();
+        </script>
+    `);
 });
 
 module.exports = router;

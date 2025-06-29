@@ -1,15 +1,13 @@
 const express = require('express');
-
-/* const passport = require('passport');
-require('./passport');
-app.use(passport.initialize()); */
-
 require('dotenv').config();
 const cors = require('cors');
+const passport = require('passport');
+require('./passport');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 
 const modalityRoutes = require('./routes/modalities');
 app.use('/api/modalities', modalityRoutes);
@@ -31,7 +29,7 @@ app.use('/api/users', usersRoutes);
 
 // students route 
 const studentsRoutes = require('./routes/students');
-app.use('/api/students', studentsRoutes); 
+app.use('/api/students', studentsRoutes);
 
 const studentProfilesRoutes = require('./routes/studentProfiles');
 app.use('/api/student-profiles', studentProfilesRoutes);
@@ -77,8 +75,8 @@ app.use('/api/users', completedClassesRoutes);
 
 app.use('/api/recordings', require('./routes/recordings'));
 
-/* const googleAuthRouter = require('./routes/googleAuth');
-app.use('/auth', googleAuthRouter); */
+const googleAuthRouter = require('./routes/googleAuth');
+app.use('/auth', googleAuthRouter);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
