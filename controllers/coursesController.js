@@ -105,7 +105,7 @@ const getCoursesByCategoryName = async (req, res) => {
 const updateCourseMentor = async (req, res) => {
   const { courseId } = req.params;
   let { mentorId } = req.body;
-  console.log("PUT /courses/:courseId/mentor body:", req.body);
+  // console.log("PUT /courses/:courseId/mentor body:", req.body);
 
   if (!mentorId) {
     return res.status(400).json({ error: "mentorId es requerido" });

@@ -2,7 +2,7 @@ const pool = require('../db');
 
 // INSERT
 const insertStudentCourse = async (req, res) => {
-  console.log("Body recibido:", req.body);
+  // console.log("Body recibido:", req.body);
   const { userId, courseId, enrollmentDate } = req.body;
 
   try {
@@ -76,7 +76,7 @@ const updateStudentCourse = async (req, res) => {
 // DELETE
 const deleteStudentCourse = async (req, res) => {
   const { id } = req.params;
-  console.log("Intentando eliminar studentcourseid:", id);
+  // console.log("Intentando eliminar studentcourseid:", id);
   try {
     await pool.query('SELECT sp_delete_student_courses($1)', [Number(id)]);
     res.status(200).json({ message: 'Curso del estudiante eliminado exitosamente.' });
