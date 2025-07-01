@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const admin = require('../config/firebaseAdmin');
 
 // Configuración del transporter de nodemailer
 const transporter = nodemailer.createTransport({
@@ -34,7 +35,7 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        // Generar token JWT
+        // Generar token JWT tradicional
         const token = jwt.sign(
             {
                 userId: user.userid,
@@ -45,12 +46,27 @@ const login = async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        // Generar custom token de Firebase
+        let firebaseToken = null;
+        try {
+            firebaseToken = await admin.auth().createCustomToken(user.userid.toString(), {
+                email: user.email,
+                roleId: user.roleid,
+                firstname: user.firstname,
+                lastname1: user.lastname1
+            });
+        } catch (firebaseError) {
+            console.error('Error generando Firebase custom token:', firebaseError);
+            // Continúa sin el token de Firebase si hay error
+        }
+
         // Eliminar la contraseña del objeto de respuesta
         delete user.password;
 
         res.status(200).json({
             message: 'Login exitoso',
             token,
+            firebaseToken,
             user
         });
     } catch (error) {
@@ -174,7 +190,7 @@ const changePassword = async (req, res) => {
         if (!token) {
             return res.status(403).json({ error: "Acceso denegado. Se requiere un token." });
         }
-        
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId; // Obtenemos el ID del usuario desde el token
 
@@ -208,10 +224,58 @@ const changePassword = async (req, res) => {
     }
 };
 
+// Generar solo Firebase custom token (para el frontend que quiera usar Firebase Auth)
+const getFirebaseToken = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Buscar usuario por email
+        const userResult = await pool.query('SELECT * FROM sp_select_user_by_email($1)', [email]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ error: 'Credenciales inválidas' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Verificar contraseña
+        const validPassword = await bcrypt.compare(password, user.password);
+
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Credenciales inválidas' });
+        }
+
+        // Generar solo custom token de Firebase
+        const firebaseToken = await admin.auth().createCustomToken(user.userid.toString(), {
+            email: user.email,
+            roleId: user.roleid,
+            firstname: user.firstname,
+            lastname1: user.lastname1,
+            photourl: user.photourl
+        });
+
+        res.status(200).json({
+            firebaseToken,
+            user: {
+                userId: user.userid,
+                email: user.email,
+                firstname: user.firstname,
+                lastname1: user.lastname1,
+                roleId: user.roleid,
+                photourl: user.photourl
+            }
+        });
+    } catch (error) {
+        console.error('Error generando Firebase custom token:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
 module.exports = {
     login,
     logout,
     requestPasswordReset,
     resetPassword,
-    changePassword
-}; 
+    changePassword,
+    getFirebaseToken
+};
