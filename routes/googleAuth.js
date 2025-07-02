@@ -37,27 +37,42 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
         }
 
         // Envía HTML que cierra el popup y envía los tokens al padre
+        // res.send(`
+        //     <script>
+        //         // Envía los tokens a la ventana padre
+        //         window.opener.postMessage({
+        //             type: 'GOOGLE_AUTH_SUCCESS',
+        //             token: '${token}',
+        //             firebaseToken: '${firebaseToken || ''}',
+        //             user: ${JSON.stringify({
+        //     userId: user.userid,
+        //     email: user.email,
+        //     firstname: user.firstname,
+        //     lastname1: user.lastname1,
+        //     roleId: user.roleid,
+        //     photourl: user.photourl
+        // })}
+        //         }, '*');
+                
+        //         // Cierra el popup
+        //         window.close();
+        //     </script>
+        // `);
+
         res.send(`
             <script>
-                // Envía los tokens a la ventana padre
                 window.opener.postMessage({
                     type: 'GOOGLE_AUTH_SUCCESS',
                     token: '${token}',
                     firebaseToken: '${firebaseToken || ''}',
-                    user: ${JSON.stringify({
-            userId: user.userid,
-            email: user.email,
-            firstname: user.firstname,
-            lastname1: user.lastname1,
-            roleId: user.roleid,
-            photourl: user.photourl
-        })}
+                    user: ${JSON.stringify(user)},
+                    isNewUser: ${user.isNewUser || false}
                 }, '*');
-                
-                // Cierra el popup
                 window.close();
             </script>
         `);
+
+
     } catch (error) {
         console.error('Error en Google callback:', error);
         res.status(500).send('Error en la autenticación');

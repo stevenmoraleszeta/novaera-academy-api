@@ -11,6 +11,7 @@ passport.use(new GoogleStrategy({
     async (accessToken, refreshToken, profile, done) => {
         // Busca o crea el usuario en la DB
         let user;
+        let isNewUser = false; 
         const email = profile.emails[0].value;
         const name = profile.displayName;
         const photoUrl = profile.photos[0].value;
@@ -18,6 +19,7 @@ passport.use(new GoogleStrategy({
         // Busca usuario por email
         const userResult = await pool.query('SELECT * FROM sp_select_user_by_email($1)', [email]);
         if (userResult.rows.length === 0) {
+            isNewUser = true;
             const newUserResult = await pool.query(
                 'SELECT * FROM sp_create_user_google($1, $2, $3)',
                 [email, name, photoUrl]
@@ -26,6 +28,7 @@ passport.use(new GoogleStrategy({
         } else {
             user = userResult.rows[0];
         }
+        user.isNewUser = isNewUser;
         return done(null, user);
     }));
 
