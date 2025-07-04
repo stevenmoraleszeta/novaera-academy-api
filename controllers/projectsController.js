@@ -21,21 +21,83 @@ const insertProject = async (req, res) => {
 
     const studentEmail = studentResult.rows[0].email;
 
-    // Insertamos el proyecto
-    await pool.query(
-      'SELECT sp_insert_project($1, $2, $3, $4, $5, $6, $7)',
+    // Insertamos el proyecto y obtenemos los datos del proyecto creado
+    const projectResult = await pool.query(
+      'INSERT INTO projects (title, duedate, fileurl, orderproject, courseid, mentorid, userid) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [title, dueDate, fileUrl, orderProject, courseId, mentorId, userId]
     );
 
-    // Enviamos la notificación al estudiante
-    await sendProjectNotification(
-      studentEmail,
-      'Nuevo Proyecto Asignado',
-      `Se te ha asignado un nuevo proyecto: "${title}". Fecha de entrega: ${dueDate}`
-    );
+    const newProject = projectResult.rows[0];
+    console.log("Proyecto creado:", newProject);
 
-    res.status(201).json({ message: 'Proyecto creado exitosamente y notificación enviada al estudiante.' });
+    // Crear automáticamente registros en student_projects para todos los estudiantes del curso
+    if (courseId) {
+      console.log("Creando asignaciones para todos los estudiantes del curso", courseId);
+
+      // Obtener todos los estudiantes inscritos en el curso
+      const studentsInCourse = await pool.query(
+        'SELECT userid FROM student_courses WHERE courseid = $1',
+        [courseId]
+      );
+
+      console.log(`Encontrados ${studentsInCourse.rows.length} estudiantes en el curso`);
+
+      // Crear registro en student_projects para cada estudiante
+      const studentProjectPromises = studentsInCourse.rows.map(async (student) => {
+        try {
+          const result = await pool.query(
+            `INSERT INTO student_projects 
+             (title, duedate, submissiondate, fileurl, studentfileurl, comments, score, courseid, projectid, userid, mentorid, statusid)
+             VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 2)
+             RETURNING studentprojectid`,
+            [
+              newProject.title,
+              newProject.duedate,
+              newProject.fileurl,
+              newProject.courseid,
+              newProject.projectid,
+              student.userid,
+              newProject.mentorid,
+            ]
+          );
+          return { success: true, studentId: student.userid, recordId: result.rows[0].studentprojectid };
+        } catch (error) {
+          return { success: false, studentId: student.userid, error: error.message };
+        }
+      });
+
+      const assignmentResults = await Promise.all(studentProjectPromises);
+      const successfulAssignments = assignmentResults.filter(result => result.success);
+      const failedAssignments = assignmentResults.filter(result => !result.success);
+
+      console.log(`Asignaciones exitosas: ${successfulAssignments.length}`);
+      if (failedAssignments.length > 0) {
+        console.warn(`Asignaciones fallidas: ${failedAssignments.length}`, failedAssignments);
+      }
+    }
+
+    // Enviamos la notificación al estudiante (si falla, no debe afectar la creación del proyecto)
+    try {
+      await sendProjectNotification(
+        studentEmail,
+        'Nuevo Proyecto Asignado',
+        `Se te ha asignado un nuevo proyecto: "${title}". Fecha de entrega: ${dueDate}`
+      );
+      console.log("Notificación enviada exitosamente");
+    } catch (notificationError) {
+      console.error("Error enviando notificación:", notificationError);
+      // No lanzamos el error para que no afecte la creación del proyecto
+    }
+
+    const responseData = {
+      message: 'Proyecto creado exitosamente y asignado a todos los estudiantes del curso.',
+      project: newProject
+    };
+
+    console.log("Enviando respuesta:", responseData);
+    res.status(201).json(responseData);
   } catch (error) {
+    console.error("Error en insertProject:", error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -74,9 +136,23 @@ const deleteProject = async (req, res) => {
   const { projectId } = req.params;
 
   try {
+    console.log(`Iniciando eliminación del proyecto ${projectId}`);
+
+    // Primero eliminar todos los student-projects relacionados
+    const studentProjectsResult = await pool.query(
+      'DELETE FROM student_projects WHERE projectid = $1 RETURNING *',
+      [projectId]
+    );
+
+    console.log(`Eliminados ${studentProjectsResult.rowCount} student-projects relacionados`);
+
+    // Luego eliminar el proyecto principal
     await pool.query('SELECT sp_delete_project($1)', [projectId]);
+
+    console.log(`Proyecto ${projectId} eliminado exitosamente`);
     res.status(200).json({ message: 'Proyecto eliminado exitosamente.' });
   } catch (error) {
+    console.error(`Error al eliminar proyecto ${projectId}:`, error);
     res.status(400).json({ error: error.message });
   }
 };
