@@ -15,26 +15,46 @@ const insertProject = async (req, res) => {
       [userId]
     );
 
-    if (studentResult.rows.length === 0) {
-      throw new Error('No se encontró el estudiante');
+    const mentorResult = await pool.query(
+      'SELECT u.email, u.roleid FROM users u INNER JOIN mentors m ON u.userid = m.userid WHERE m.mentorid = $1',
+      [mentorId]
+    );
+
+    if (studentResult.rows.length === 0 && mentorResult.rows.length === 0) {
+      throw new Error('No se encontró el estudiante o el mentor');
     }
 
     const studentEmail = studentResult.rows[0].email;
-
+    const mentorEmail = mentorResult.rows[0].email;
+    
     // Insertamos el proyecto
-    await pool.query(
-      'SELECT sp_insert_project($1, $2, $3, $4, $5, $6, $7)',
+    const newProjectResult = await pool.query(
+      'SELECT * FROM sp_insert_project($1, $2, $3, $4, $5, $6, $7)',
       [title, dueDate, fileUrl, orderProject, courseId, mentorId, userId]
     );
 
-    // Enviamos la notificación al estudiante
-    await sendProjectNotification(
-      studentEmail,
-      'Nuevo Proyecto Asignado',
-      `Se te ha asignado un nuevo proyecto: "${title}". Fecha de entrega: ${dueDate}`
-    );
+    const newProject = newProjectResult.rows[0];
+    if (!newProject || !newProject.projectid) {
+          throw new Error("Error: El SP no devolvió el ID del nuevo proyecto.");
+    }
 
-    res.status(201).json({ message: 'Proyecto creado exitosamente y notificación enviada al estudiante.' });
+    
+    const projectWithDetails = {
+        ...newProject, 
+        userEmail: studentEmail,  
+        mentorEmail: mentorEmail  
+    };
+    // Enviamos la notificación al estudiante
+    // await sendProjectNotification(
+    //   studentEmail,
+    //   'Nuevo Proyecto Asignado',
+    //   `Se te ha asignado un nuevo proyecto: "${title}". Fecha de entrega: ${dueDate}`
+    // );
+
+    res.status(201).json({ 
+      message: 'Proyecto creado exitosamente y notificación enviada al estudiante.',
+      project: projectWithDetails
+     });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -74,6 +94,10 @@ const deleteProject = async (req, res) => {
   const { projectId } = req.params;
 
   try {
+    await pool.query(
+            'DELETE FROM student_projects WHERE projectid = $1', 
+            [projectId]
+        );
     await pool.query('SELECT sp_delete_project($1)', [projectId]);
     res.status(200).json({ message: 'Proyecto eliminado exitosamente.' });
   } catch (error) {
