@@ -167,6 +167,93 @@ const getProjectsByCourse = async (req, res) => {
   }
 };
 
+// Asignar proyectos existentes a un estudiante recién inscrito
+const assignExistingProjectsToStudent = async (req, res) => {
+  const { userId, courseId } = req.body;
+
+  try {
+    const projectsResult = await pool.query(
+      'SELECT * FROM projects WHERE courseid = $1 ORDER BY orderproject',
+      [courseId]
+    );
+
+    if (projectsResult.rows.length === 0) {
+      return res.status(200).json({
+        message: 'No hay proyectos en este curso para asignar.',
+        assignedProjects: 0
+      });
+    }
+
+    console.log(`Encontrados ${projectsResult.rows.length} proyectos en el curso`);
+
+    // Verificar qué proyectos ya están asignados al estudiante
+    const existingAssignments = await pool.query(
+      'SELECT projectid FROM student_projects WHERE userid = $1 AND courseid = $2',
+      [userId, courseId]
+    );
+
+    const alreadyAssignedProjects = existingAssignments.rows.map(row => row.projectid);
+    console.log(`Proyectos ya asignados al estudiante: ${alreadyAssignedProjects.length}`);
+
+    // Filtrar proyectos que no están asignados
+    const projectsToAssign = projectsResult.rows.filter(project =>
+      !alreadyAssignedProjects.includes(project.projectid)
+    );
+
+    if (projectsToAssign.length === 0) {
+      return res.status(200).json({
+        message: 'El estudiante ya tiene asignados todos los proyectos del curso.',
+        assignedProjects: 0
+      });
+    }
+
+    const assignmentPromises = projectsToAssign.map(async (project) => {
+      try {
+        const result = await pool.query(
+          `INSERT INTO student_projects 
+           (title, duedate, submissiondate, fileurl, studentfileurl, comments, score, courseid, projectid, userid, mentorid, statusid)
+           VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 2)
+           RETURNING studentprojectid`,
+          [
+            project.title,
+            project.duedate,
+            project.fileurl,
+            project.courseid,
+            project.projectid,
+            userId,
+            project.mentorid,
+          ]
+        );
+        console.log(`Proyecto ${project.projectid} asignado al estudiante ${userId}: ${result.rows[0].studentprojectid}`);
+        return { success: true, projectId: project.projectid, projectTitle: project.title };
+      } catch (error) {
+        console.error(`Error asignando proyecto ${project.projectid} al estudiante ${userId}:`, error.message);
+        return { success: false, projectId: project.projectid, error: error.message };
+      }
+    });
+
+    const assignmentResults = await Promise.all(assignmentPromises);
+    const successfulAssignments = assignmentResults.filter(result => result.success);
+    const failedAssignments = assignmentResults.filter(result => !result.success);
+
+    console.log(`Asignaciones exitosas: ${successfulAssignments.length}`);
+    if (failedAssignments.length > 0) {
+      console.warn(`Asignaciones fallidas: ${failedAssignments.length}`, failedAssignments);
+    }
+
+    res.status(200).json({
+      message: `Se asignaron ${successfulAssignments.length} proyectos al estudiante.`,
+      assignedProjects: successfulAssignments.length,
+      totalProjects: projectsToAssign.length,
+      successfulAssignments: successfulAssignments,
+      failedAssignments: failedAssignments
+    });
+
+  } catch (error) {
+    console.error("Error en assignExistingProjectsToStudent:", error);
+    res.status(400).json({ error: error.message });
+  }
+};
 
 module.exports = {
   insertProject,
@@ -174,4 +261,5 @@ module.exports = {
   updateProject,
   deleteProject,
   getProjectsByCourse,
+  assignExistingProjectsToStudent
 };
