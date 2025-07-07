@@ -103,28 +103,32 @@ const logout = async (req, res) => {
 // Solicitar restablecimiento de contraseña
 const requestPasswordReset = async (req, res) => {
     const { email } = req.body;
-
     try {
         // Verificar si el usuario existe
         const userResult = await pool.query('SELECT * FROM sp_select_user_by_email($1)', [email]);
 
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
+            return res.status(200).json({ message: 'Si existe una cuenta con este correo, se ha enviado un enlace de recuperación.' });
         }
 
         const user = userResult.rows[0];
-
         // Generar token de restablecimiento
         const resetToken = crypto.randomBytes(32).toString('hex');
-        const hashedToken = await bcrypt.hash(resetToken, 10);
+        const passwordResetToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
 
-        // Guardar el token en la base de datos
-        await pool.query('SELECT sp_update_reset_token($1, $2)', [user.userid, hashedToken]);
+        // 3. Establecer fecha de expiración (10 minutos desde que se envia el correo)
+        const passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-        // Crear enlace de restablecimiento
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-        // Enviar correo electrónico
+        // Guardar el token en la bd
+        await pool.query('SELECT sp_update_reset_token($1, $2, $3)', [user.userid, passwordResetToken, passwordResetExpires]);
+
+        // Crear enlace para el restablecimiento
+        const resetLink = `${process.env.FRONTEND_URL}/resetPassword?token=${resetToken}`;
+
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
@@ -133,18 +137,20 @@ const requestPasswordReset = async (req, res) => {
                 <p>Hola,</p>
                 <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para continuar:</p>
                 <a href="${resetLink}">Restablecer contraseña</a>
-                <p>Este enlace expirará en 1 hora.</p>
+                <p>Este enlace expirará en 10 min.</p>
                 <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
             `
         };
+        html: `<p>Para restablecer tu contraseña, haz clic en el siguiente enlace: <a href="${resetLink}">Restablecer Contraseña</a>. El enlace es válido por 10 minutos.</p>`
 
         await transporter.sendMail(mailOptions);
 
-        res.status(200).json({
-            message: 'Se ha enviado un correo con las instrucciones para restablecer la contraseña'
+        res.status(200).json({ 
+            message: 'Si existe una cuenta con este correo, se ha enviado un enlace de recuperación.' 
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en requestPasswordReset:", error);;
+        res.status(500).json({ error: 'Ocurrió un error en el servidor.' });
     }
 };
 
@@ -153,32 +159,29 @@ const resetPassword = async (req, res) => {
     const { token, newPassword } = req.body;
 
     try {
-        // Buscar usuario con el token
-        const userResult = await pool.query('SELECT * FROM sp_select_user_by_reset_token($1)', [token]);
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
 
-        if (userResult.rows.length === 0) {
-            return res.status(400).json({ error: 'Token inválido o expirado' });
+        // Buscar usuario con el token
+        const userResult = await pool.query('SELECT * FROM sp_select_user_by_reset_token($1)', [hashedToken]);
+
+         if (userResult.rows.length === 0) {
+            return res.status(400).json({ error: 'El token es inválido o ha expirado.' });
         }
 
         const user = userResult.rows[0];
 
-        // Verificar si el token coincide
-        const validToken = await bcrypt.compare(token, user.reset_token);
-
-        if (!validToken) {
-            return res.status(400).json({ error: 'Token inválido o expirado' });
-        }
-
         // Hashear nueva contraseña
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Actualizar contraseña y limpiar token
+      
+        // Actualiza la contraseña
         await pool.query('SELECT sp_update_password($1, $2)', [user.userid, hashedPassword]);
+        // Actualizar contraseña y limpiar token
         await pool.query('SELECT sp_clear_reset_token($1)', [user.userid]);
-
-        res.status(200).json({
-            message: 'Contraseña actualizada exitosamente'
-        });
+        
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });        
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

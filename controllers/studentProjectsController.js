@@ -6,9 +6,9 @@ const insertStudentProject = async (req, res) => {
   const {
     title, dueDate, submissionDate, fileUrl, studentFileUrl,
     comments, score, courseId, projectId, userId, mentorId, statusId,
-    studentEmail, mentorEmail
+    userEmail, mentorEmail
   } = req.body;
-
+  
   try {
     await pool.query(
       'SELECT sp_insert_student_project($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
@@ -20,7 +20,7 @@ const insertStudentProject = async (req, res) => {
 
     // Enviar correo al estudiante
     await sendProjectNotification(
-      studentEmail,
+      userEmail,
       'Nuevo Proyecto Enviado',
       `Se ha enviado tu proyecto "${title}" exitosamente. Fecha de entrega: ${dueDate}`
     );
@@ -37,6 +37,8 @@ const insertStudentProject = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+
 const searchStudentProjectsByStudentName = async (req, res) => {
   const { studentName } = req.query;
 

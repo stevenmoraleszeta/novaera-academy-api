@@ -15,8 +15,13 @@ const insertProject = async (req, res) => {
       [userId]
     );
 
-    if (studentResult.rows.length === 0) {
-      throw new Error('No se encontró el estudiante');
+    const mentorResult = await pool.query(
+      'SELECT u.email, u.roleid FROM users u INNER JOIN mentors m ON u.userid = m.userid WHERE m.mentorid = $1',
+      [mentorId]
+    );
+
+    if (studentResult.rows.length === 0 && mentorResult.rows.length === 0) {
+      throw new Error('No se encontró el estudiante o el mentor');
     }
 
     const studentEmail = studentResult.rows[0].email;
