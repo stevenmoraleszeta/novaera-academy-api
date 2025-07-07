@@ -111,11 +111,60 @@ const getStudentProjectsByStatusName = async (req, res) => {
   }
 };
 
+
+const submitStudentProject = async (req, res) => {
+  const { studentFileUrl, userId, comments = null } = req.body;
+  const { projectId } = req.params;
+
+  try {
+    console.log("Recibiendo entrega de proyecto:", { projectId, userId, studentFileUrl });
+
+    // Buscar el registro de student_project para este usuario y proyecto
+    const studentProjectResult = await pool.query(
+      'SELECT * FROM student_projects WHERE projectid = $1 AND userid = $2',
+      [projectId, userId]
+    );
+
+    if (studentProjectResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'No se encontró asignación de proyecto para este estudiante.'
+      });
+    }
+
+    const studentProject = studentProjectResult.rows[0];
+
+    // Actualizar con la entrega del estudiante
+    await pool.query(
+      `UPDATE student_projects 
+       SET studentfileurl = $1, submissiondate = NOW(), comments = $2
+       WHERE studentprojectid = $3`,
+      [studentFileUrl, comments, studentProject.studentprojectid]
+    );
+
+    // Obtener el proyecto actualizado
+    const updatedResult = await pool.query(
+      'SELECT * FROM student_projects WHERE studentprojectid = $1',
+      [studentProject.studentprojectid]
+    );
+
+    console.log("Proyecto entregado exitosamente:", updatedResult.rows[0]);
+
+    res.status(200).json({
+      message: 'Proyecto entregado exitosamente.',
+      studentProject: updatedResult.rows[0]
+    });
+  } catch (error) {
+    console.error("Error al entregar proyecto:", error);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   insertStudentProject,
   getStudentProjects,
   updateStudentProject,
   deleteStudentProject,
   searchStudentProjectsByStudentName,
-  getStudentProjectsByStatusName
+  getStudentProjectsByStatusName,
+  submitStudentProject
 };
