@@ -63,7 +63,19 @@ const getStudentProjects = async (req, res) => {
   }
 };
 
-// UPDATE FALTA ESTO URGE!!!!!
+const getStudentSubmission = async (req, res) => {
+    const { projectId, userId } = req.params;
+    try {
+        const submission = await pool.query(
+            "SELECT * FROM student_projects WHERE projectid = $1 AND userid = $2",
+            [projectId, userId]
+        );
+        res.json(submission.rows[0] || null);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const updateStudentProject = async (req, res) => {
   const { studentProjectId } = req.params;
   const {
@@ -157,6 +169,7 @@ const submitStudentProject = async (req, res) => {
 module.exports = {
   insertStudentProject,
   getStudentProjects,
+  getStudentSubmission,
   updateStudentProject,
   deleteStudentProject,
   searchStudentProjectsByStudentName,
