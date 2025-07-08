@@ -53,7 +53,7 @@ const insertProject = async (req, res) => {
           const result = await pool.query(
             `INSERT INTO student_projects 
              (title, duedate, submissiondate, fileurl, studentfileurl, comments, score, courseid, projectid, userid, mentorid, statusid)
-             VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 2)
+             VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 1)
              RETURNING studentprojectid`,
             [
               newProject.title,

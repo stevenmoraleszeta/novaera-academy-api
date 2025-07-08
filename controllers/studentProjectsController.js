@@ -14,7 +14,7 @@ const insertStudentProject = async (req, res) => {
       'SELECT sp_insert_student_project($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
       [
         title, dueDate, submissionDate, fileUrl, studentFileUrl,
-        comments, score, courseId, projectId, userId, mentorId, statusId
+        comments, score, courseId, projectId, userId, mentorId, 1
       ]
     );
 
@@ -76,7 +76,7 @@ const updateStudentProject = async (req, res) => {
       'SELECT sp_update_student_project($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
       [
         studentProjectId, project_title, project_duedate, submissiondate, fileurl, studentfileurl,
-        comments, score, courseid, projectid, student_userid, mentor_userid, statusid
+        comments, score, courseid, projectid, student_userid, mentor_userid, 3
       ]
     );
     const { rows } = await pool.query('SELECT * FROM sp_select_student_project_by_id($1)', [studentProjectId]);
@@ -90,7 +90,7 @@ const updateStudentProject = async (req, res) => {
   }
 };
 
-// DELETE
+// DELETE 
 const deleteStudentProject = async (req, res) => {
   const { studentProjectId } = req.params;
 
@@ -117,8 +117,6 @@ const submitStudentProject = async (req, res) => {
   const { projectId } = req.params;
 
   try {
-    console.log("Recibiendo entrega de proyecto:", { projectId, userId, studentFileUrl });
-
     // Buscar el registro de student_project para este usuario y proyecto
     const studentProjectResult = await pool.query(
       'SELECT * FROM student_projects WHERE projectid = $1 AND userid = $2',
@@ -134,24 +132,21 @@ const submitStudentProject = async (req, res) => {
     const studentProject = studentProjectResult.rows[0];
 
     // Actualizar con la entrega del estudiante
-    await pool.query(
+    const result = await pool.query(
       `UPDATE student_projects 
-       SET studentfileurl = $1, submissiondate = NOW(), comments = $2
-       WHERE studentprojectid = $3`,
+       SET studentfileurl = $1, submissiondate = NOW(), comments = $2, statusid = 2
+       WHERE studentprojectid = $3
+       RETURNING *`,
       [studentFileUrl, comments, studentProject.studentprojectid]
     );
 
-    // Obtener el proyecto actualizado
-    const updatedResult = await pool.query(
-      'SELECT * FROM student_projects WHERE studentprojectid = $1',
-      [studentProject.studentprojectid]
-    );
+    const updatedProject = result.rows[0];
 
-    console.log("Proyecto entregado exitosamente:", updatedResult.rows[0]);
+    console.log("Proyecto entregado exitosamente:", updatedProject);
 
     res.status(200).json({
       message: 'Proyecto entregado exitosamente.',
-      studentProject: updatedResult.rows[0]
+      studentProject: updatedProject
     });
   } catch (error) {
     console.error("Error al entregar proyecto:", error);

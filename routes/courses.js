@@ -6,10 +6,12 @@ router.post('/', controller.insertCourse);
 router.get('/', controller.getCourses);
 router.put('/:courseId/mentor', controller.updateCourseMentor);
 router.put('/:courseId', controller.updateCourse);
+router.put('/:courseId/image', controller.updateImageCourse);
 router.delete('/:courseId', controller.deleteCourse);
 router.get('/search', controller.searchCoursesByTitle);
 router.get('/category-name/:name', controller.getCoursesByCategoryName);
 router.get('/:courseId', controller.getCourseById);
+
 
 
 module.exports = router;

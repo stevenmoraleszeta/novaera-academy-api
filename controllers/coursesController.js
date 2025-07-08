@@ -54,6 +54,40 @@ const updateCourse = async (req, res) => {
   }
 };
 
+// Update de la imagen del curso
+const updateImageCourse = async (req, res) => {
+    const { courseId } = req.params; 
+    const { imageUrl } = req.body;  
+
+    // Validación básica
+    if (!imageUrl) {
+        return res.status(400).json({ error: 'La URL de la imagen es requerida.' });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE courses 
+             SET imageUrl = $1 
+             WHERE courseid = $2 
+             RETURNING *`,
+            [imageUrl, courseId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Curso no encontrado.' });
+        }
+
+        res.status(200).json({ 
+            message: 'Imagen del curso actualizada exitosamente.',
+            course: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Error al actualizar la imagen del curso:", error);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
 // DELETE
 const deleteCourse = async (req, res) => {
   const { courseId } = req.params;
@@ -131,6 +165,7 @@ module.exports = {
   getCourses,
   updateCourseMentor,
   updateCourse,
+  updateImageCourse,
   deleteCourse,
   searchCoursesByTitle,
   getCoursesByCategoryName,
