@@ -19,6 +19,16 @@ const classValidations = [
     .isBoolean().withMessage('El campo restricted debe ser un valor booleano')
 ];
 
+const updateClassValidations = [
+  // check('restricted')
+  //       .exists({ checkFalsy: true }) 
+  //       .isBoolean().withMessage('El campo restricted debe ser un valor booleano')
+
+  check('restricted')
+        .isBoolean()
+        .withMessage('El campo restricted debe ser un valor booleano'),
+]
+
 // Obtener todas las clases
 const getClasses = async (req, res) => {
   try {
@@ -118,7 +128,6 @@ const updateClass = async (req, res) => {
         error: 'ID de clase inválido'
       });
     }
-
     // Verificar si existe la clase
     const classExists = await pool.query(
       'SELECT 1 FROM classes WHERE classId = $1',
@@ -271,6 +280,7 @@ const getClassesByCourseModule = async (req, res) => {
 
 module.exports = {
   classValidations,
+  updateClassValidations,
   getClasses,
   createClass,
   updateClass,
