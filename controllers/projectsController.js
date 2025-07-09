@@ -9,46 +9,24 @@ const insertProject = async (req, res) => {
   } = req.body;
 
   try {
-    // Primero obtenemos el correo del estudiante
-    const studentResult = await pool.query(
-      'SELECT email FROM users WHERE userid = $1',
-      [userId]
-    );
-
-    const mentorResult = await pool.query(
-      'SELECT u.email, u.roleid FROM users u INNER JOIN mentors m ON u.userid = m.userid WHERE m.mentorid = $1',
-      [mentorId]
-    );
-
-    if (studentResult.rows.length === 0 && mentorResult.rows.length === 0) {
-      throw new Error('No se encontró el estudiante o el mentor');
-    }
-
-    const studentEmail = studentResult.rows[0].email;
-
-    // Insertamos el proyecto y obtenemos los datos del proyecto creado
+     // Insertamos el proyecto y obtenemos los datos del proyecto creado
     const projectResult = await pool.query(
       'INSERT INTO projects (title, duedate, fileurl, orderproject, courseid, mentorid, userid) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [title, dueDate, fileUrl, orderProject, courseId, mentorId, userId]
     );
 
     const newProject = projectResult.rows[0];
-    console.log("Proyecto creado:", newProject);
 
     // Crear automáticamente registros en student_projects para todos los estudiantes del curso
     if (courseId) {
-      console.log("Creando asignaciones para todos los estudiantes del curso", courseId);
-
       // Obtener todos los estudiantes inscritos en el curso
       const studentsInCourse = await pool.query(
-        'SELECT userid FROM student_courses WHERE courseid = $1',
+        'SELECT DISTINCT u.userid, u.email FROM users u JOIN student_courses sc ON u.userid = sc.userid WHERE sc.courseid = $1',
         [courseId]
-      );
-
-      console.log(`Encontrados ${studentsInCourse.rows.length} estudiantes en el curso`);
+    );
 
       // Crear registro en student_projects para cada estudiante
-      const studentProjectPromises = studentsInCourse.rows.map(async (student) => {
+      studentsInCourse.rows.map(async (student) => {
         try {
           const result = await pool.query(
             `INSERT INTO student_projects 
@@ -65,33 +43,16 @@ const insertProject = async (req, res) => {
               newProject.mentorid,
             ]
           );
-          return { success: true, studentId: student.userid, recordId: result.rows[0].studentprojectid };
+          // Notificar al estudiante actual del bucle 
+            await sendProjectNotification(
+                student.email, // <-- Usamos el email del estudiante correcto
+                'Nuevo Proyecto Asignado',
+                `Se te ha asignado un nuevo proyecto: "${newProject.title}".`
+            );
         } catch (error) {
-          return { success: false, studentId: student.userid, error: error.message };
+          console.error(`Falló el proceso para student.userid: ${student.userid}`, error);
         }
       });
-
-      const assignmentResults = await Promise.all(studentProjectPromises);
-      const successfulAssignments = assignmentResults.filter(result => result.success);
-      const failedAssignments = assignmentResults.filter(result => !result.success);
-
-      console.log(`Asignaciones exitosas: ${successfulAssignments.length}`);
-      if (failedAssignments.length > 0) {
-        console.warn(`Asignaciones fallidas: ${failedAssignments.length}`, failedAssignments);
-      }
-    }
-
-    // Enviamos la notificación al estudiante (si falla, no debe afectar la creación del proyecto)
-    try {
-      await sendProjectNotification(
-        studentEmail,
-        'Nuevo Proyecto Asignado',
-        `Se te ha asignado un nuevo proyecto: "${title}". Fecha de entrega: ${dueDate}`
-      );
-      console.log("Notificación enviada exitosamente");
-    } catch (notificationError) {
-      console.error("Error enviando notificación:", notificationError);
-      // No lanzamos el error para que no afecte la creación del proyecto
     }
 
     const responseData = {
@@ -99,7 +60,6 @@ const insertProject = async (req, res) => {
       project: newProject
     };
 
-    console.log("Enviando respuesta:", responseData);
     res.status(201).json(responseData);
   } catch (error) {
     console.error("Error en insertProject:", error);
@@ -217,7 +177,7 @@ const assignExistingProjectsToStudent = async (req, res) => {
         const result = await pool.query(
           `INSERT INTO student_projects 
            (title, duedate, submissiondate, fileurl, studentfileurl, comments, score, courseid, projectid, userid, mentorid, statusid)
-           VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 2)
+           VALUES ($1, $2, NULL, $3, NULL, NULL, NULL, $4, $5, $6, $7, 1)
            RETURNING studentprojectid`,
           [
             project.title,
