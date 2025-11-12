@@ -1,20 +1,41 @@
 {
-  "name": "zetaback",
+  "name": "novaera-academy-api",
   "version": "1.0.0",
+  "description": "A comprehensive RESTful API backend for Novaera Academy, a modern e-learning platform that manages courses, students, mentors, payments, and educational resources.",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app",
+    "start": "node app.js",
     "dev": "nodemon app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "api",
+    "rest",
+    "express",
+    "nodejs",
+    "postgresql",
+    "e-learning",
+    "academy",
+    "education",
+    "courses",
+    "authentication",
+    "jwt",
+    "oauth",
+    "firebase"
+  ],
+  "author": "Steven Morales Fallas",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/novaera-academy-api.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
-    "crypto": "^1.0.1",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
@@ -24,8 +45,7 @@
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "pg": "^8.14.1",
-    "zetaback": "file:"
+    "pg": "^8.14.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
